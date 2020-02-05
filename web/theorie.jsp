@@ -231,6 +231,64 @@ positionne avant la servlet, et intervient donc en amont dans le cycle de traite
 Il peut être associé à une ou plusieurs servlets. Voici à la figure suivante un schéma représentant le cas où plusieurs
 filtres seraient associés à notre servlet de connexion.
 
+            rêquete HTTP   |        |      |        |      |        |       |                   |
+           ------------->  |        |  --> |        |  --> |        |  -->  |    Servlet        |
+Client                     | filtre |      | filtre |      | filtre |       |  [ connexion ]    |
+            reponse HTTP   |   1    |      |   2    |      |   n    |               |
+           <-------------  |        |  <-- |        | <--  |        |  <--         \/
+                           |        |      |        |      |        |      |       JSP          |
+                                                                           |  [ connexion.jsp ] |
+
+Vous pouvez d'ores et déjà remarquer sur cette illustration que les filtres peuvent intervenir à la fois sur la
+requête entrante et sur la réponse émise, et qu'ils s'appliquent dans un ordre précis, en cascade.
+
+************************************************************************************************************************
+                            Quelle est la différence entre un filtre et une servlet ?
+************************************************************************************************************************
+
+Alors qu'un composant web comme la servlet est utilisé pour générer une réponse HTTP à envoyer au client, le filtre ne crée habituellement pas de réponse ; il se contente généralement d'appliquer d'éventuelles modifications à la paire requête / réponse existante. Voici une liste des actions les plus communes réalisables par un filtre :
+
+     * interroger une requête et agir en conséquence ;
+
+     * empêcher la paire requête / réponse d'être transmise plus loin, autrement dit bloquer son cheminement dans
+       l'application ;
+
+     * modifier les en-têtes et le contenu de la requête courante ;
+
+     * modifier les en-têtes et le contenu de la réponse courante.
+
+
+************************************************************************************************************************
+                                       Quel est l'intérêt d'un filtre ?
+************************************************************************************************************************
+
+Le filtre offre trois avantages majeurs, qui sont interdépendants :
+
+     * il permet de modifier de manière transparente un échange HTTP. En effet, il n'implique pas nécessairement la
+       création d'une réponse, et peut se contenter de modifier la paire requête / réponse existante ;
+
+     * tout comme la servlet, il est défini par un mapping, et peut ainsi être appliqué à plusieurs requêtes ;
+
+     * plusieurs filtres peuvent être appliqués en cascade à la même requête.
+
+C'est la combinaison de ces trois propriétés qui fait du filtre un composant parfaitement adapté à tous les traitements
+de masse, nécessitant d'être appliqués systématiquement à tout ou partie des pages d'une application. À titre d'exemple,
+on peut citer les usages suivants : l'authentification des visiteurs, la génération de logs, la conversion d'images,
+la compression de données ou encore le chiffrement de données.
+
+************************************************************************************************************************
+                                                 Fonctionnement
+************************************************************************************************************************
+
+Regardons maintenant comment est construit un filtre. À l'instar de sa cousine la servlet, qui doit obligatoirement
+implémenter l'interface Servlet, le filtre doit implémenter l'interface Filter. Mais cette fois, contrairement au cas
+de la servlet qui peut par exemple hériter de HttpServlet, il n'existe ici pas de classe fille. Lorsque nous étudions
+la documentation de l'interface, nous remarquons qu'elle est plutôt succincte, elle ne contient que trois définitions
+de méthodes : init(), doFilter() et destroy().
+
+Vous le savez, lorsqu'une classe Java implémente une interface, elle doit redéfinir chaque méthode présente dans cette
+interface. Ainsi, voici le code de la structure à vide d'un filtre
+
 --%>
 
 </body>

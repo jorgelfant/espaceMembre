@@ -10,10 +10,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 
-//**********************************************************************************************************************
-//                                         La servlet de contrôle
-//**********************************************************************************************************************
-
 public class Connexion extends HttpServlet {
     public static final String ATT_USER = "utilisateur";
     public static final String ATT_FORM = "form";

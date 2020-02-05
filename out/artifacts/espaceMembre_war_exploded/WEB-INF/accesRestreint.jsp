@@ -2,7 +2,7 @@
   Created by IntelliJ IDEA.
   User: jorge.carrillo
   Date: 2/5/2020
-  Time: 1:34 PM
+  Time: 1:31 PM
   To change this template use File | Settings | File Templates.
 --%>
 <%@ page pageEncoding="UTF-8" %>
@@ -10,9 +10,10 @@
 <html>
 <head>
     <meta charset="utf-8" />
-    <title>Accès public</title>
+    <title>Accès restreint</title>
 </head>
 <body>
-<p>Vous n'avez pas accès à l'espace restreint : vous devez vous <a href="connexion">connecter</a> d'abord. </p>
+<p>Vous êtes connecté(e) avec l'adresse ${sessionScope.sessionUtilisateur.email},
+    vous avez bien accès à l'espace restreint.</p>
 </body>
 </html>

@@ -214,6 +214,23 @@ de la session dans chacune des 100 servlets contrôlant l'accès aux 100 pages p
 n'est absolument pas viable, et qu'il nous faut apprendre une autre méthode. La réponse à nos soucis s'appelle le
 filtre, et nous allons le découvrir dans le paragraphe suivant.
 
+
+************************************************************************************************************************
+                                           LE PRINCIPE DU FILTRE
+************************************************************************************************************************
+
+Généralités
+***********
+
+************************
+Qu'est-ce qu'un filtre ?
+************************
+
+Un filtre est un objet Java qui peut <<modifier les en-têtes et le contenu d'une requête ou d'une réponse>>. Il se
+positionne avant la servlet, et intervient donc en amont dans le cycle de traitement d'une requête par le serveur.
+Il peut être associé à une ou plusieurs servlets. Voici à la figure suivante un schéma représentant le cas où plusieurs
+filtres seraient associés à notre servlet de connexion.
+
 --%>
 
 </body>

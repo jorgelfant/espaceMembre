@@ -182,6 +182,7 @@ Test du système
 ***************
 
 Pour vérifier le bon fonctionnement de cet exemple d'accès restreint, suivez le scénario suivant :
+--------------------------------------------------------------------------------------------------
 
     1) redémarrez Tomcat, afin de faire disparaître toute session qui serait encore active ;
 
@@ -200,9 +201,9 @@ Pour vérifier le bon fonctionnement de cet exemple d'accès restreint, suivez l
 Sans grande surprise, le système fonctionne bien : nous devons être connectés pour accéder à la page dont l'accès
 est restreint, sinon nous sommes redirigés vers la page publique.
 
-************
-Le problème
-************
+************************************************************************************************************************
+                                           Le problème
+************************************************************************************************************************
 
 Oui, parce qu'il y a un léger problème ! Dans cet exemple, nous nous sommes occupés de deux pages : une page privée,
 une page publique. C'était rapide, simple et efficace. Maintenant si je vous demande d'étendre la restriction à 100

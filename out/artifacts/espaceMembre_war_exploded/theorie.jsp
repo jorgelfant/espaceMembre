@@ -182,6 +182,7 @@ Test du système
 ***************
 
 Pour vérifier le bon fonctionnement de cet exemple d'accès restreint, suivez le scénario suivant :
+--------------------------------------------------------------------------------------------------
 
     1) redémarrez Tomcat, afin de faire disparaître toute session qui serait encore active ;
 

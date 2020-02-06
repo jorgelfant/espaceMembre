@@ -265,14 +265,15 @@ requête / réponse existante. Voici une liste des actions les plus communes ré
                                        Quel est l'intérêt d'un filtre ?
 ************************************************************************************************************************
 
-Le filtre offre trois avantages majeurs, qui sont interdépendants :
+Le filtre offre 3 avantages majeurs, qui sont interdépendants :
+---------------------------------------------------------------
 
-     * il permet de modifier de manière transparente un échange HTTP. En effet, il n'implique pas nécessairement la
-       création d'une réponse, et peut se contenter de modifier la paire requête / réponse existante ;
+     1) il permet de modifier de manière transparente un échange HTTP. En effet, il n'implique pas nécessairement la
+        création d'une réponse, et peut se contenter de modifier la paire requête / réponse existante ;
 
-     * tout comme la servlet, il est défini par un mapping, et peut ainsi être appliqué à plusieurs requêtes ;
-
-     * plusieurs filtres peuvent être appliqués en cascade à la même requête.
+     2) tout comme la servlet, il est défini par un mapping, et peut ainsi être appliqué à plusieurs requêtes ;
+                                                                                           ------------------
+     3) plusieurs filtres peuvent être appliqués en cascade à la même requête.
 
 C'est la combinaison de ces trois propriétés qui fait du filtre un composant parfaitement adapté à tous les traitements
 de masse, nécessitant d'être appliqués systématiquement à tout ou partie des pages d'une application. À titre d'exemple,
@@ -291,6 +292,116 @@ de méthodes : init(), doFilter() et destroy().
 
 Vous le savez, lorsqu'une classe Java implémente une interface, elle doit redéfinir chaque méthode présente dans cette
 interface. Ainsi, voici le code de la structure à vide d'un filtre
+
+------------------------------------------------------------------------------------------------------------------------
+                    import java.io.IOException;
+
+                    import javax.servlet.Filter;
+                    import javax.servlet.FilterChain;
+                    import javax.servlet.FilterConfig;
+                    import javax.servlet.ServletException;
+                    import javax.servlet.ServletRequest;
+                    import javax.servlet.ServletResponse;
+
+                    public class ExempleFilter implements Filter {
+                        public void init( FilterConfig config ) throws ServletException {
+                            // ...
+                        }
+
+                        public void doFilter( ServletRequest request, ServletResponse response, FilterChain chain ) throws IOException,
+                                ServletException {
+                            // ...
+                        }
+
+                        public void destroy() {
+                            // ...
+                        }
+                    }
+------------------------------------------------------------------------------------------------------------------------
+
+Les méthodes init() et destroy() concernent le cycle de vie du filtre dans l'application. Nous allons y revenir en
+aparté dans le paragraphe suivant. La méthode qui va contenir les traitements effectués par le filtre est donc doFilter().
+Vous pouvez d'ailleurs le deviner en regardant les arguments qui lui sont transmis : elle reçoit en effet la requête et
+la réponse, ainsi qu'un troisième élément, la chaîne des filtres.
+
+***************************
+À quoi sert cette chaîne ?
+***************************
+
+Elle vous est encore inconnue, mais elle est en réalité un objet relativement simple : je vous laisse jeter un œil à
+sa courte documentation. Je vous ai annoncé un peu plus tôt que plusieurs filtres pouvaient être appliqués à la même
+requête. Eh bien c'est à travers cette chaîne qu'un ordre va pouvoir être établi : chaque filtre qui doit être appliqué
+à la requête va être inclus à la chaîne, qui ressemble en fin de compte à une file d'invocations.
+
+Cette chaîne est entièrement gérée par le conteneur, vous n'avez pas à vous en soucier. La seule chose que vous allez
+contrôler, c'est le passage d'un filtre à l'autre dans cette chaîne via l'appel de sa seule et unique méthode, elle
+aussi nommée doFilter().
+
+***********************************************************
+Comment l'ordre des filtres dans la chaîne est-il établi ?
+***********************************************************
+
+Tout comme une servlet, un filtre doit être déclaré dans le fichier web.xml de l'application pour être reconnu :
+
+                              -----------------------------------------------------------
+                              <?xml version="1.0" encoding="UTF-8"?>
+                              <web-app>
+                                  ...
+
+                                  <filter>
+                                      <filter-name>Exemple</filter-name>
+                                      <filter-class>package.ExempleFilter</filter-class>
+                                  </filter>
+                                  <filter>
+                                      <filter-name>SecondExemple</filter-name>
+                                      <filter-class>package.SecondExempleFilter</filter-class>
+                                  </filter>
+
+                                  <filter-mapping>
+                                      <filter-name>Exemple</filter-name>
+                                      <url-pattern>/*</url-pattern>
+                                  </filter-mapping>
+                                  <filter-mapping>
+                                      <filter-name>SecondExemple</filter-name>
+                                      <url-pattern>/page</url-pattern>
+                                  </filter-mapping>
+
+                                  ...
+                              </web-app>
+
+************************************************************************************************************************
+
+Vous reconnaissez ici la structure des blocs utilisés pour déclarer une servlet, la seule différence réside dans le
+nommage des champs : <servlet> devient <filter>, <servlet-name> devient <filter-name>, etc.
+
+Eh bien là encore, de la même manière que pour les servlets, l'ordre des déclarations des mappings des filtres dans
+le fichier est important : c'est cet ordre qui va être suivi lors de l'invocation de plusieurs filtres appliqués à
+une même requête. En d'autres termes, c'est dans cet ordre que la chaîne des filtres va être automatiquement initialisée
+par le conteneur. Ainsi, si vous souhaitez qu'un filtre soit appliqué avant un autre, placez son mapping avant le mapping
+du second dans le fichier web.xml de votre application.
+
+************************************************************************************************************************
+                                                 Cycle de vie
+************************************************************************************************************************
+
+Avant de passer à l'application pratique et à la mise en place d'un filtre, penchons-nous un instant sur la manière
+dont le conteneur le gère. Une fois n'est pas coutume, il y a là encore de fortes similitudes avec une servlet.
+Lorsque l'application web démarre, le conteneur de servlets va créer une instance du filtre et la garder en mémoire
+durant toute l'existence de l'application. La même instance va être réutilisée pour chaque requête entrante dont l'URL
+correspond au contenu du champ <url-pattern> du mapping du filtre. Lors de l'instanciation, la méthode init() est
+appelée par le conteneur : si vous souhaitez passer des paramètres d'initialisation au filtre, vous pouvez alors les
+récupérer depuis l'objet FilterConfig passé en argument à la méthode.
+
+Pour chacune de ces requêtes, la méthode doFilter() va être appelée. Ensuite c'est évidemment au développeur, à vous
+donc, de décider quoi faire dans cette méthode : une fois vos traitements appliqués, soit vous appelez la méthode
+doFilter() de l'objet FilterChain pour passer au filtre suivant dans la liste, soit vous effectuez une redirection ou
+un forwarding pour changer la destination d'origine de la requête.
+
+Enfin, je me répète mais il est possible de faire en sorte que plusieurs filtres s'appliquent à la même URL. Ils seront
+alors appelés dans le même ordre que celui de leurs déclarations de mapping dans le fichier web.xml de l'application.
+
+
+
 
 --%>
 

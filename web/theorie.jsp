@@ -491,8 +491,124 @@ et renommé les arguments des méthodes pour que le code de notre filtre soit pl
 Comme vous le savez, c'est dans la méthode doFilter() que nous allons réaliser notre vérification. Puisque nous avons
 déjà développé cette fonctionnalité dans une servlet en début de chapitre, il nous suffit de reprendre son code et de
 l'adapter un peu :
+------------------------------------------------------------------------------------------------------------------------
+              public class RestrictionFilter implements Filter {
+                  public static final String ACCES_PUBLIC     = "/accesPublic.jsp";
+                  public static final String ATT_SESSION_USER = "sessionUtilisateur";
+
+                  public void init( FilterConfig config ) throws ServletException {
+                  }
+
+                  public void doFilter( ServletRequest req, ServletResponse res, FilterChain chain ) throws IOException,
+                          ServletException {
+                      /* Cast des objets request et response */
+                      HttpServletRequest request = (HttpServletRequest) req;
+                      HttpServletResponse response = (HttpServletResponse) res;
+
+                      /* Récupération de la session depuis la requête */
+                      HttpSession session = request.getSession();
+
+                      /**
+                       * Si l'objet utilisateur n'existe pas dans la session en cours, alors
+                       * l'utilisateur n'est pas connecté.
+                       */
+                      if ( session.getAttribute( ATT_SESSION_USER ) == null ) {
+                          /* Redirection vers la page publique */
+                          response.sendRedirect( request.getContextPath() + ACCES_PUBLIC );
+                      } else {
+                          /* Affichage de la page restreinte */
+                          chain.doFilter( request, response );
+                      }
+                  }
+
+                  public void destroy() {
+                  }
+              }
+------------------------------------------------------------------------------------------------------------------------
+
+************************************************************************************************************************
+                                            Quelques explications s'imposent.
+************************************************************************************************************************
+
+Aux lignes 25 et 26, vous constatez que nous convertissons les objets transmis en arguments à notre méthode doFilter().
+La raison en est simple : comme je vous l'ai déjà dit, il n'existe pas de classe fille implémentant l'interface Filter,
+alors que côté servlet nous avons bien HttpServlet qui implémente Servlet. Ce qui signifie que notre filtre n'est pas
+spécialisé, il implémente uniquement Filter et peut traiter n'importe quel type de requête et pas seulement les
+requêtes HTTP.
+
+C'est donc pour cela que nous devons manuellement spécialiser nos objets, en effectuant un cast vers
+les objets dédiés aux requêtes et réponses HTTP : c'est seulement en procédant à cette conversion que nous aurons accès
+ensuite à la session, qui est propre à l'objet HttpServletRequest, et n'existe pas dans l'objet ServletRequest.
+
+À la ligne 40, nous avons remplacé le forwarding auparavant en place dans notre servlet par un appel à la méthode
+<<< doFilter() >>> de l'objet FilterChain. Celle-ci a en effet une particularité intéressante : si un autre filtre existe
+après le filtre courant dans la chaîne, alors c'est vers ce filtre que la requête va être transmise. Par contre,
+si aucun autre filtre n'est présent ou si le filtre courant est le dernier de la chaîne, alors c'est vers la ressource
+initialement demandée que la requête va être acheminée. En l'occurrence, nous n'avons qu'un seul filtre en place, notre
+requête sera donc logiquement transmise à la page demandée.
+
+Pour mettre en scène notre filtre, il nous faut enfin le déclarer dans le fichier web.xml de notre application :
+------------------------------------------------------------------------------------------------------------------------
+
+                               <filter>
+                               	<filter-name>RestrictionFilter</filter-name>
+                               	<filter-class>com.sdzee.filters.RestrictionFilter</filter-class>
+                               </filter>
+                               <filter-mapping>
+                               	<filter-name>RestrictionFilter</filter-name>
+                               	<url-pattern>/restreint/*</url-pattern>
+                               </filter-mapping>
+
+------------------------------------------------------------------------------------------------------------------------
+À la ligne 9, vous pouvez remarquer l'url-pattern précisé : le caractère * signifie que notre filtre va être appliqué
+à toutes les pages présentes sous le répertoire /restreint.
+
+Redémarrez ensuite Tomcat pour que les modifications effectuées soient prises en compte, puis suivez ce scénario de
+tests :
+
+       1) essayez d'accéder à la page http://localhost:8080/pro/restreint/accesRestreint.jsp, et constatez la
+          redirection vers la page publique ;
+
+       2) rendez-vous sur la page de connexion et connectez-vous avec des informations valides ;
+
+       3) essayez à nouveau d'accéder à la page http://localhost:8080/pro/restreint/accesRestreint.jsp, et constatez
+          le succès de l'opération ;
+
+       4) essayez alors d'accéder aux pages accesRestreint2.jsp et accesRestreint3.jsp, et constatez là encore le
+          succès de l'opération ;
+
+       5) rendez-vous sur la page de déconnexion ;
+
+       6) puis tentez alors d'accéder à la page http://localhost:8080/pro/restreint/accesRestreint.jsp et constatez
+          cette fois l'échec de l'opération.
 
 
+Notre problème est bel et bien réglé ! Nous sommes maintenant capables de bloquer l'accès à un ensemble de pages avec
+une simple vérification dans un unique filtre : nous n'avons pas besoin de dupliquer le contrôle effectué dans des
+servlets appliquées à chacune des pages !
+
+************************************************************************************************************************
+                                    Restreindre l'application entière
+************************************************************************************************************************
+
+Avant de nous quitter, regardons brièvement comment forcer l'utilisateur à se connecter pour accéder à notre application.
+Ce principe est par exemple souvent utilisé sur les intranets d'entreprise, où la connexion est généralement obligatoire
+dès l'entrée sur le site.
+
+La première chose à faire, c'est de modifier la portée d'application du filtre. Puisque nous souhaitons couvrir
+l'intégralité des requêtes entrantes, il suffit d'utiliser le caractère * appliqué à la racine. La déclaration de
+notre filtre devient donc :
+
+------------------------------------------------------------------------------------------------------------------------
+                           <filter>
+                                   <filter-name>RestrictionFilter</filter-name>
+                                   <filter-class>com.sdzee.filters.RestrictionFilter</filter-class>
+                           </filter>
+                           <filter-mapping>
+                                   <filter-name>RestrictionFilter</filter-name>
+                                   <url-pattern>/*</url-pattern>
+                           </filter-mapping>
+------------------------------------------------------------------------------------------------------------------------
 --%>
 
 </body>

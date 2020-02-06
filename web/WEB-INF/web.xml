@@ -42,8 +42,8 @@
 
     <!--////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                                                     FILTRES
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////-->
-    <!--Filtre 1-->
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     <filter>
         <filter-name>RestrictionFilter</filter-name>
         <filter-class>com.exemple.filters.RestrictionFilter</filter-class>
@@ -52,9 +52,9 @@
         <filter-name>RestrictionFilter</filter-name>
         <url-pattern>/restreint/*</url-pattern>
     </filter-mapping>
+    -->
 
-    <!--/////////////////////////////////////////////////////////////////////////////////////////////////////////////-->
-    <!--Filtre 2-->
+    <!-- Filtre modifié pour l'étendre à l'integralité de l'application-->
     <filter>
         <filter-name>RestrictionFilter</filter-name>
         <filter-class>com.exemple.filters.RestrictionFilter</filter-class>
@@ -63,6 +63,5 @@
         <filter-name>RestrictionFilter</filter-name>
         <url-pattern>/*</url-pattern>
     </filter-mapping>
-
 
 </web-app>

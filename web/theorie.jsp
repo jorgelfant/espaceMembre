@@ -400,7 +400,97 @@ un forwarding pour changer la destination d'origine de la requête.
 Enfin, je me répète mais il est possible de faire en sorte que plusieurs filtres s'appliquent à la même URL. Ils seront
 alors appelés dans le même ordre que celui de leurs déclarations de mapping dans le fichier web.xml de l'application.
 
+************************************************************************************************************************
+                                Restreindre l'accès à un ensemble de pages
+************************************************************************************************************************
 
+Restreindre un répertoire
+*************************
+
+Après cette longue introduction plutôt abstraite, lançons-nous et essayons d'utiliser un filtre pour répondre à notre
+problème : mettre en place une restriction d'accès sur un groupe de pages. C'est probablement l'utilisation la plus
+classique du filtre dans une application web !
+
+Dans notre cas, nous allons nous en servir pour vérifier la présence d'un utilisateur dans la session :
+------------------------------------------------------------------------------------------------------
+
+    * s'il est présent, notre filtre laissera la requête poursuivre son cheminement jusqu'à la page souhaitée ;
+
+    * s'il n'existe pas, notre filtre redirigera l'utilisateur vers la page publique.
+
+Pour cela, nous allons commencer par créer un répertoire nommé restreint que nous allons placer à la racine de
+notre projet, dans lequel nous allons déplacer le fichier accesRestreint.jsp et y placer les deux fichiers suivants :
+
+Voici à la figure suivante un aperçu de l’arborescence que vous devez alors obtenir:
+
+repertoire restreint dans WEB avec :  accesRestreint.jsp   accesRestreint2.jsp   accesRestreint3.jsp
+et accesPublic.jsp  dans WEB
+
+************************************************************************************************************************
+
+C'est de ce répertoire restreint que nous allons limiter l'accès aux utilisateurs connectés (accesRestreint) .
+Souvenez-vous bien du point suivant : pour le moment, nos pages JSP n'étant pas situées sous le répertoire /WEB-INF,
+elles sont accessibles au public directement depuis leurs URL respectives. Par exemple, vous pouvez vous rendre sur
+http://localhost:8080/pro/restreint/accesRestreint.jsp même sans être connectés, le seul problème que vous rencontrerez
+est l'absence de l'adresse email dans le message affiché.
+
+Supprimez ensuite la servlet Restriction que nous avions développée en début de chapitre, ainsi que sa déclaration
+dans le fichier web.xml : elle nous est dorénavant inutile.
+
+                           JE LA GARDE ICI COMME SOUVENIR
+ -----------------------------------------------------------------------------------------------------------------------
+ public class Restriction extends HttpServlet {
+       public static final String ACCES_PUBLIC = "/accesPublic.jsp";
+       public static final String ACCES_RESTREINT = "/WEB-INF/accesRestreint.jsp";
+       public static final String ATT_SESSION_USER = "sessionUtilisateur";
+
+       public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+           /* Récupération de la session depuis la requête */
+           HttpSession session = request.getSession();
+
+           /* Si l'objet utilisateur n'existe pas dans la session en cours, alors l'utilisateur n'est pas connecté.*/
+           if (session.getAttribute(ATT_SESSION_USER) == null) {
+               /* Redirection vers la page publique */
+               response.sendRedirect(request.getContextPath() + ACCES_PUBLIC);
+           } else {
+               /* Affichage de la page restreinte */
+               this.getServletContext().getRequestDispatcher(ACCES_RESTREINT).forward(request, response);
+           }
+       }
+    }
+------------------------------------------------------------------------------------------------------------------------
+
+Nous pouvons maintenant créer notre filtre. Je vous propose de le placer dans un nouveau package com.sdzee.filters,
+et de le nommer RestrictionFilter. Voyez à la figure suivante comment procéder après un Ctrl + N sous Eclipse.
+
+************************************************************************************************************************
+
+       public class RestrictionFilter implements Filter {
+
+             // method de l'interface Filter 1
+             public void init(FilterConfig filterConfig) throws ServletException {
+
+             }
+
+             // method de l'interface Filter 2
+             public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)
+                                                                                   throws IOException, ServletException {
+
+             }
+
+             // method de l'interface Filter 3
+             public void destroy() {
+
+             }
+       }
+
+************************************************************************************************************************
+Rien de fondamental n'a changé par rapport à la version générée par Eclipse, j'ai simplement retiré les commentaires
+et renommé les arguments des méthodes pour que le code de notre filtre soit plus lisible par la suite.
+
+Comme vous le savez, c'est dans la méthode doFilter() que nous allons réaliser notre vérification. Puisque nous avons
+déjà développé cette fonctionnalité dans une servlet en début de chapitre, il nous suffit de reprendre son code et de
+l'adapter un peu :
 
 
 --%>

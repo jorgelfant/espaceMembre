@@ -231,6 +231,8 @@ positionne avant la servlet, et intervient donc en amont dans le cycle de traite
 Il peut être associé à une ou plusieurs servlets. Voici à la figure suivante un schéma représentant le cas où plusieurs
 filtres seraient associés à notre servlet de connexion.
 
+                                                    SERVEUR
+                           **********************************************************************
             rêquete HTTP   |        |      |        |      |        |       |                   |
            ------------->  |        |  --> |        |  --> |        |  -->  |    Servlet        |
 Client                     | filtre |      | filtre |      | filtre |       |  [ connexion ]    |
@@ -246,17 +248,18 @@ requête entrante et sur la réponse émise, et qu'ils s'appliquent dans un ordr
                             Quelle est la différence entre un filtre et une servlet ?
 ************************************************************************************************************************
 
-Alors qu'un composant web comme la servlet est utilisé pour générer une réponse HTTP à envoyer au client, le filtre ne crée habituellement pas de réponse ; il se contente généralement d'appliquer d'éventuelles modifications à la paire requête / réponse existante. Voici une liste des actions les plus communes réalisables par un filtre :
+Alors qu'un composant web comme la servlet est utilisé pour générer une réponse HTTP à envoyer au client, le filtre
+ne crée habituellement pas de réponse ; il se contente généralement d'appliquer d'éventuelles modifications à la paire
+requête / réponse existante. Voici une liste des actions les plus communes réalisables par un filtre :
 
-     * interroger une requête et agir en conséquence ;
+    |* interroger une requête et agir en conséquence ;
 
-     * empêcher la paire requête / réponse d'être transmise plus loin, autrement dit bloquer son cheminement dans
-       l'application ;
+    |* empêcher la paire requête / réponse d'être transmise plus loin, autrement dit bloquer son cheminement
+    |  dans l'application ;
 
-     * modifier les en-têtes et le contenu de la requête courante ;
+    |* modifier les en-têtes et le contenu de la requête courante ;
 
-     * modifier les en-têtes et le contenu de la réponse courante.
-
+    |* modifier les en-têtes et le contenu de la réponse courante.
 
 ************************************************************************************************************************
                                        Quel est l'intérêt d'un filtre ?
@@ -277,7 +280,7 @@ on peut citer les usages suivants : l'authentification des visiteurs, la génér
 la compression de données ou encore le chiffrement de données.
 
 ************************************************************************************************************************
-                                                 Fonctionnement
+                                               Fonctionnement
 ************************************************************************************************************************
 
 Regardons maintenant comment est construit un filtre. À l'instar de sa cousine la servlet, qui doit obligatoirement

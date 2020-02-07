@@ -13,7 +13,8 @@
 <head>
     <meta charset="utf-8"/>
     <title>Connexion</title>
-    <link type="text/css" rel="stylesheet" href="form.css"/>
+    <!-- On va changer href="inc/form.css" -->
+     <link type="text/css" rel="stylesheet" href="inc/form.css"/>
 
 </head>
 <body>
@@ -55,5 +56,6 @@
 
     </fieldset>
 </form>
+<% System.out.println(request.getAttribute("chemin"));%>
 </body>
 </html>

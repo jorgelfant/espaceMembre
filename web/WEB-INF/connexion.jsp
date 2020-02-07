@@ -13,14 +13,16 @@
 <head>
     <meta charset="utf-8"/>
     <title>Connexion</title>
-    <link type="text/css" rel="stylesheet" href="form.css"/>
-
+    <!-- On va changer href="inc/form.css" -->
+    <!-- <link type="text/css" rel="stylesheet" href="inc/form.css"/> -->
+    <!-- par -->
+    <link type="text/css" rel="stylesheet" href="<c:url value="/inc/form.css"/>"/><!-- como si hubiera escrito
+                     espaceMembre_war_exploded/inc/form.css c'est plus une adresse relative mais une absolue-->
 </head>
 <body>
 <%-- Dans la page connexion.jsp, remplacez la ligne suivante : <form method="post" action="connexion">
      Par cette ligne : <form method="post" action="<c:url value="/connexion" />">
      esto es porque hemos hecho que el navegador no acepte cookies y du coup el navegador no nos reconoce --%>
-
 
 <%-- <form method="post" action="connexion"> --%>
 <form method="post" action="<c:url value="/connexion" />">
@@ -55,5 +57,6 @@
 
     </fieldset>
 </form>
+<% System.out.println(request.getAttribute("chemin"));%>
 </body>
 </html>

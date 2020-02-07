@@ -609,6 +609,212 @@ notre filtre devient donc :
                                    <url-pattern>/*</url-pattern>
                            </filter-mapping>
 ------------------------------------------------------------------------------------------------------------------------
+
+Redémarrez Tomcat pour que la modification soit prise en compte.
+----------------------------------------------------------------
+
+Maintenant, vous devez réfléchir à ce que nous venons de mettre en place : nous avons ordonné à notre filtre de bloquer
+toutes les requêtes entrantes si l'utilisateur n'est pas connecté. Le problème, c'est que si nous ne changeons pas le
+code de notre filtre, alors l'utilisateur ne pourra jamais accéder à notre site !
+
+Pourquoi ? Notre filtre le redirigera vers la page accesPublic.jsp comme il le faisait dans le cas de la restriction
+d'accès au répertoire restreint, non ?
+
+Eh bien non, plus maintenant ! La méthode de redirection que nous avons mise en place va bien être appelée, mais comme
+vous le savez elle va déclencher un échange HTTP, c'est-à-dire un aller-retour avec le navigateur du client. Le client
+va donc renvoyer automatiquement une requête, qui va à son tour être interceptée par notre filtre. Le client n'étant
+toujours pas connecté, le même phénomène va se reproduire, etc. Si vous y tenez, vous pouvez essayer : vous verrez alors
+votre navigateur vous avertir que la page que vous essayez de contacter pose problème. Voici aux figures suivantes les
+messages affichés respectivement par Chrome et Firefox.
+
+                                              Échec de la restriction
+
+************************
+La solution est simple :
+************************
+
+     1) il faut envoyer l'utilisateur vers la page de connexion, et non plus vers la page accesPublic.jsp ;
+
+     2) il faut effectuer non plus une redirection HTTP mais un forwarding, afin qu'aucun nouvel échange HTTP n'ait
+        lieu et que la demande aboutisse.
+
+Voici ce que devient le code de notre filtre, les changements intervenant aux lignes 16 et 37 :
+
+                         public class RestrictionFilter implements Filter {
+                             public static final String ACCES_CONNEXION  = "/connexion"; //linea agragada
+                             public static final String ATT_SESSION_USER = "sessionUtilisateur";
+
+                             public void init( FilterConfig config ) throws ServletException {
+                             }
+
+                             public void doFilter( ServletRequest req, ServletResponse res, FilterChain chain ) throws IOException,
+                                     ServletException {
+                                 /* Cast des objets request et response */
+                                 HttpServletRequest request = (HttpServletRequest) req;
+                                 HttpServletResponse response = (HttpServletResponse) res;
+
+                                 /* Récupération de la session depuis la requête */
+                                 HttpSession session = request.getSession();
+
+                                 /**
+                                  * Si l'objet utilisateur n'existe pas dans la session en cours, alors
+                                  * l'utilisateur n'est pas connecté.
+                                  */
+                                 if ( session.getAttribute( ATT_SESSION_USER ) == null ) {
+                                     /* Redirection vers la page publique */
+                                     request.getRequestDispatcher( ACCES_CONNEXION ).forward( request, response );
+                                 } else {
+                                     /* Affichage de la page restreinte */
+                                     chain.doFilter( request, response );
+                                 }
+                             }
+
+                             public void destroy() {
+                             }
+                         }
+
+C'est tout pour le moment. Tentez alors d'accéder à la page http://localhost:8080/pro/restreint/accesRestreint.jsp,
+vous obtiendrez le formulaire affiché à la figure suivante.
+
+                                  -------------
+                                  Ratage du CSS
+                                  -------------
+
+Vous pouvez alors constater que notre solution fonctionne : l'utilisateur est maintenant bien redirigé vers la page
+de connexion. Oui, mais...
+
+---------------------------------------
+Où est passé le design de notre page ?!
+---------------------------------------
+
+Eh bien la réponse est simple : il a été bloqué !
+                                -----------------
+En réalité lorsque vous accédez à une page web sur laquelle est attachée une feuille de style CSS, votre navigateur va,
+dans les coulisses, envoyer une deuxième requête au serveur pour récupérer silencieusement cette feuille et ensuite
+appliquer les styles au contenu HTML. Et vous pouvez le deviner, cette seconde requête a bien évidemment été bloquée
+par notre superfiltre !
+
+************************************************************************************************************************
+                   Il y a plusieurs solutions envisageables. Voici les deux plus courantes :
+************************************************************************************************************************
+
+   1) ne plus appliquer le filtre à la racine de l'application, mais seulement sur des répertoires ou pages en particulier,
+      en prenant soin d'éviter de restreindre l'accès à notre page CSS ;
+
+   2) continuer à appliquer le filtre sur toute l'application, mais déplacer notre feuille de style dans un répertoire,
+      et ajouter un passe-droit au sein de la méthode doFilter() du filtre.
+         -----------------------------------------------------------------
+
+Je vais vous expliquer cette seconde méthode. Une bonne pratique d'organisation consiste en effet à placer sous un
+répertoire commun toutes les ressources destinées à être incluses, afin de permettre un traitement simplifié.
+Par "ressources incluses", on entend généralement les feuilles de style CSS, les feuilles Javascript ou encore les
+images, bref tout ce qui est susceptible d'être inclus dans une page HTML ou une page JSP.
+
+Pour commencer, créez donc un répertoire nommé inc sous la racine de votre application et placez-y le fichier CSS,
+comme indiqué à la figure suivante.
+
+Puisque nous venons de déplacer le fichier, nous devons également modifier son appel dans la page de connexion :
+----------------------------------------------------------------------------------------------------------------
+
+                     <!-- Dans le fichier connexion.jsp, remplacez l'appel suivant : -->
+                     <link type="text/css" rel="stylesheet" href="form.css" />
+
+                     <!-- Par celui-ci : -->
+                     <link type="text/css" rel="stylesheet" href="inc/form.css" />
+-----------------------------------------------------------------------------------------------------------------
+
+Pour terminer, nous devons réaliser dans la méthode doFilter() de notre filtre ce fameux passe-droit sur
+le dossier inc :
+
+On rajoute ceci dans la methode filter :
+
+En gros request.getRequestURI() me retourne toute l'url, aceci je lui applique un substring, et cela
+commencera a conter l'url à partir du length du context c'est à dire qu'il contiendra l'url qu'à partir de
+/inc    cad du slash    on serait tenté de créer un dossier pareil pour images et js et lui rajoutes
+avec un else if pour le laisses passer à chaque fois un html/jsp associé essaie de les récupérer
+
+    /* Non-filtrage des ressources statiques */                       25
+        String chemin = request.getRequestURI().substring( request.getContextPath().length() );
+        if ( chemin.startsWith( "/inc" ) ) {
+            chain.doFilter( request, response );
+            return;
+        }
+------------------------------------------------------------------------------------------------------------------------
+
+Explications :
+
+     * à la ligne 29, nous récupérons l'URL d'appel de la requête HTTP via la méthode getRequestURI(), puis nous plaçons
+       dans la chaîne chemin sa partie finale, c'est-à-dire la partie située après le contexte de l'application.
+       Typiquement, dans notre cas si nous nous rendons sur http://localhost:8080/pro/restreint/accesRestreint.jsp,
+       la méthode getRequestURI() va renvoyer /pro/restreint/accesRestreint.jsp et chemin va contenir
+       uniquement /restreint/accesRestreint.jsp ;
+
+     * à la ligne 30, nous testons si cette chaîne chemin commence par /inc : si c'est le cas, cela signifie que la
+       page demandée est une des ressources statiques que nous avons placées sous le répertoire inc, et qu'il ne faut
+       donc pas lui appliquer le filtre !
+
+     * à la ligne 31, nous laissons la requête poursuivre son cheminement en appelant la méthode doFilter() de la chaîne.
+
+------------------------------------------------------------------------------------------------------------------------
+
+Faites les modifications, enregistrez et tentez d'accéder à la page http://localhost:8080/pro/connexion. Observez la
+figure suivante.
+
+Le résultat est parfait, ça fonctionne ! Oui, mais...
+
+Quoi encore ? Il n'y a plus de problème, toute l'application fonctionne maintenant !
+
+Toute ? Non ! Un irréductible souci résiste encore et toujours... Par exemple, rendez-vous maintenant
+sur la page http://localhost:8080/pro/restreint/accesRestreint.jsp.
+
+************************************************************************************************************************
+Pourquoi la feuille de style n'est-elle pas appliquée à notre formulaire de connexion dans ce cas ?
+************************************************************************************************************************
+
+Eh bien cette fois, c'est à cause du forwarding que nous avons mis en place dans notre filtre ! Eh oui, souvenez-vous :
+le forwarding ne modifie pas l'URL côté client, comme vous pouvez d'ailleurs le voir dans votre dernière fenêtre.
+
+Cela veut dire que le NAVIGATEUR du client reçoit bien le formulaire de connexion, mais ne sait pas que c'est la page
+/connexion.jsp qui le lui a renvoyé, il croit qu'il s'agit tout bonnement du retour de la page demandée, c'est-à-dire
+/restreint/accesRestreint.jsp.
+
+De ce fait, lorsqu'il va silencieusement envoyer une requête au serveur pour récupérer la feuille CSS associée à la
+page de connexion, le navigateur va naïvement se baser sur l'URL qu'il a en mémoire pour interpréter l'appel suivant :
+
+                      <link type="text/css" rel="stylesheet" href="inc/form.css" />
+                      -------------------------------------------------------------
+
+En conséquence, il va considérer que l'URL relative "inc/form.css" se rapporte au répertoire qu'il pense être le
+répertoire courant, à savoir /restreint (puisque pour lui, le formulaire a été affiché par /restreint/accesRestreint.jsp).
+Ainsi, le navigateur va demander au serveur de lui renvoyer la page /restreint/inc/forms.css, alors que cette page
+n'existe pas ! Voilà pourquoi le design de notre formulaire semble avoir disparu.
+
+Pour régler ce problème, nous n'allons ni toucher au filtre ni au forwarding, mais nous allons tirer parti de la JSTL
+pour modifier la page connexion.jsp :
+
+                     -------------------------------------------------------------------
+                     <!-- Dans le fichier connexion.jsp, remplacez l'appel suivant : -->
+                     <link type="text/css" rel="stylesheet" href="inc/form.css" />
+
+                     <!-- Par celui-ci : -->
+                     <link type="text/css" rel="stylesheet" href="<c:url value="/inc/form.css"/>" />
+------------------------------------------------------------------------------------------------------------------------
+
+Vous vous souvenez de ce que je vous avais expliqué à propos de la balise <c:url> ? Je vous avais dit qu'elle ajoutait
+automatiquement le contexte de l'application aux URL absolues qu'elle contenait. C'est exactement ce que nous souhaitons :
+dans ce cas, le rendu de la balise sera /pro/inc/form.css. Le navigateur reconnaîtra ici une URL absolue et non plus
+une URL relative comme c'était le cas auparavant, et il réalisera correctement l'appel au fichier CSS !
+
+Dans ce cas, pourquoi ne pas avoir directement écrit l'URL absolue "/pro/inc/form.css" dans l'appel ? Pourquoi
+s'embêter avec <c:url> ?
+
+Pour la même raison que nous avions utilisé request.getContextPath() dans la servlet que nous avions développée
+en première partie de ce chapitre. Si demain nous décidons de changer le nom du contexte, notre page fonctionnera
+toujours avec la balise <c:url>, alors qu'il faudra éditer et modifier l'URL absolue entrée à la main sinon.
+J'espère que cette fois, vous avez bien compris ! ;)
+
+Une fois la modification effectuée, voici le résultat (voir la figure suivante).
+
 --%>
 
 </body>

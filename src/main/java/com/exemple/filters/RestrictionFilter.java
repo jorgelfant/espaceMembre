@@ -13,8 +13,8 @@ import java.io.IOException;
 
 
 public class RestrictionFilter implements Filter {
-
-    public static final String ACCES_PUBLIC = "/accesPublic.jsp";
+    public static final String ACCES_CONNEXION = "/connexion";
+    //public static final String ACCES_PUBLIC = "/accesPublic.jsp";
     public static final String ATT_SESSION_USER = "sessionUtilisateur";
 
     //--------------------------------- method de l'interface Filter 1 -------------------------------------------------
@@ -28,15 +28,26 @@ public class RestrictionFilter implements Filter {
         HttpServletRequest request = (HttpServletRequest) req;
         HttpServletResponse response = (HttpServletResponse) res;
 
+        // Non-filtrage des ressources statiques -- PASSE-DROIT pour les fichiers associés à nos html (ex: css, js, images)
+        String chemin = request.getRequestURI().substring(request.getContextPath().length());
+        if (chemin.startsWith("/inc")) {
+            chain.doFilter(request, response);
+            return;
+        }
+
         // Récupération de la session depuis la requête
         HttpSession session = request.getSession();
 
         // Si l'objet utilisateur n'existe pas dans la session en cours, alors l'utilisateur n'est pas connecté.
         if (session.getAttribute(ATT_SESSION_USER) == null) {
             // Redirection vers la page publique
-            response.sendRedirect(request.getContextPath() + ACCES_PUBLIC);
+            //response.sendRedirect(request.getContextPath() + ACCES_PUBLIC);
+            //On va changer la ligne dessus sendRedirect par un forwarding pour que le filtre ne la bloque pas en URL /*
+            //ceci va donc m'envoyer sur a page /connexion sans que cela affiche la /connexion
+            request.getRequestDispatcher(ACCES_CONNEXION).forward(request, response);
         } else {
-            // Affichage de la page restreinte
+            // Affichage de la page restreinte, une fois que l'utilisateur existe on pourra accéder aux pages restreintes
+            // demandées, c'est le principe de chain.doFilter(request, response)
             chain.doFilter(request, response);
         }
     }

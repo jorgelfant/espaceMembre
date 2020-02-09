@@ -55,6 +55,8 @@
     -->
 
     <!-- Filtre modifié pour l'étendre à l'integralité de l'application-->
+
+    <!-- ON DESACTIVE LE FILTRE
     <filter>
         <filter-name>RestrictionFilter</filter-name>
         <filter-class>com.exemple.filters.RestrictionFilter</filter-class>
@@ -63,5 +65,29 @@
         <filter-name>RestrictionFilter</filter-name>
         <url-pattern>/*</url-pattern>
     </filter-mapping>
+-->
+
+<!-- Ce filtre est l'endroit idéal pour effectuer simplement cet appel à chaque requête reçue, et sur l'intégralité
+de l'application. il se trouve que nous n'avons même pas besoin de créer nous-mêmes ce filtre. Tomcat en propose déjà
+un nativement ! Il va donc nous suffire d'ajouter une déclaration dans le fichier web.xml de notre application pour
+que notre projet soit enfin capable de gérer correctement les requêtes POST qu'il traite : -->
+    <filter>
+        <filter-name>Set Character Encoding</filter-name>
+        <filter-class>org.apache.catalina.filters.SetCharacterEncodingFilter</filter-class>
+        <init-param>
+            <param-name>encoding</param-name>
+            <param-value>UTF-8</param-value>
+        </init-param>
+        <init-param>
+            <param-name>ignore</param-name>
+            <param-value>false</param-value>
+        </init-param>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>Set Character Encoding</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
 
 </web-app>

@@ -815,6 +815,65 @@ J'espère que cette fois, vous avez bien compris ! ;)
 
 Une fois la modification effectuée, voici le résultat (voir la figure suivante).
 
+Finalement, nous y sommes : tout fonctionne comme prévu !
+
+------------------------------------------------------------------------------------------------------------------------
+Si je vous fais mettre en place une telle restriction, c'est uniquement pour vous faire découvrir le principe.
+Dans une vraie application, il faudra bien prendre garde à ne pas restreindre des pages dont l'accès est supposé
+être libre !
+------------------------------------------------------------------------------------------------------------------------
+
+Par exemple, dans votre projet il est dorénavant impossible pour un utilisateur de s'inscrire ! Eh oui, réflechissez-bien :
+puisque le filtre est en place, dès lors qu'un utilisateur non inscrit (et donc non connecté) tente d'accéder à la page
+d'inscription, il est automatiquement redirigé vers la page de connexion ! Devoir se connecter avant même de pouvoir
+s'inscrire, admettez qu'on a connu plus logique... :-° Pour régler le problème, il suffirait en l'occurrence d'ajouter
+une exception au filtre pour autoriser l'accès à la page d'inscription, tout comme nous l'avons fait pour le dossier
+/inc. Mais ce n'est pas sur cette correction en particulier que je souhaite insister, vous devez surtout bien réaliser
+que lorsque vous appliquez des filtres avec un spectre très large, voire intégral, alors vous devez faire très attention
+et bien réfléchir à tous les cas d'utilisation de votre application.
+
+************************************************************************************************************************
+                                         Désactiver le filtre
+************************************************************************************************************************
+
+Une fois vos développements et tests terminés, pour plus de commodité dans les exemples à suivre, je vous conseille
+de désactiver ce filtre. Pour cela, commentez simplement sa déclaration dans le fichier web.xml de votre application :
+
+Il faudra redémarrer Tomcat pour que la modification soit prise en compte.
+
+************************************************************************************************************************
+                                      Modifier le mode de déclenchement d'un filtre
+************************************************************************************************************************
+
+Je vous ai implicitement fait comprendre à travers ces quelques exemples qu'un filtre était déclenché lors de la
+réception d'une requête HTTP uniquement. Eh bien sachez qu'il s'agit là d'un comportement par défaut ! En réalité,
+un filtre est tout à fait capable de s'appliquer à un forwarding, mais il faut pour cela modifier sa déclaration dans
+le fichier web.xml :
+                             ----------------------------------------------------------------------
+                              <filter>
+                                  <filter-name>RestrictionFilter</filter-name>
+                                  <filter-class>com.sdzee.filters.RestrictionFilter</filter-class>
+                              </filter>
+                              <filter-mapping>
+                                  <filter-name>RestrictionFilter</filter-name>
+                                  <url-pattern>/*</url-pattern>
+                                  <dispatcher>REQUEST</dispatcher>
+                                  <dispatcher>FORWARD</dispatcher>
+                              </filter-mapping>
+                             ----------------------------------------------------------------------
+
+Il suffit, comme vous pouvez l'observer, de rajouter un champ <dispatcher> à la fin de la section <filter-mapping>.
+
+De même, si dans votre projet vous mettez en place des inclusions et souhaitez leur appliquer un filtre, alors il
+faudra ajouter cette ligne à la déclaration du filtre :
+
+                             <dispatcher>INCLUDE</dispatcher>
+
+Nous n'allons pas nous amuser à vérifier le bon fonctionnement de ces changements. Retenez simplement qu'il est bel
+et bien possible de filtrer les forwardings et inclusions en plus des requêtes directes entrantes, en modifiant au
+cas par cas les déclarations des filtres à appliquer. Enfin, n'oubliez pas que ces ajouts au fichier web.xml ne sont
+pris en compte qu'après un redémarrage du serveur.
+
 --%>
 
 </body>

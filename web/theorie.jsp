@@ -815,6 +815,170 @@ J'espère que cette fois, vous avez bien compris ! ;)
 
 Une fois la modification effectuée, voici le résultat (voir la figure suivante).
 
+Finalement, nous y sommes : tout fonctionne comme prévu !
+
+------------------------------------------------------------------------------------------------------------------------
+Si je vous fais mettre en place une telle restriction, c'est uniquement pour vous faire découvrir le principe.
+Dans une vraie application, il faudra bien prendre garde à ne pas restreindre des pages dont l'accès est supposé
+être libre !
+------------------------------------------------------------------------------------------------------------------------
+
+Par exemple, dans votre projet il est dorénavant impossible pour un utilisateur de s'inscrire ! Eh oui, réflechissez-bien :
+puisque le filtre est en place, dès lors qu'un utilisateur non inscrit (et donc non connecté) tente d'accéder à la page
+d'inscription, il est automatiquement redirigé vers la page de connexion ! Devoir se connecter avant même de pouvoir
+s'inscrire, admettez qu'on a connu plus logique... :-° Pour régler le problème, il suffirait en l'occurrence d'ajouter
+une exception au filtre pour autoriser l'accès à la page d'inscription, tout comme nous l'avons fait pour le dossier
+/inc. Mais ce n'est pas sur cette correction en particulier que je souhaite insister, vous devez surtout bien réaliser
+que lorsque vous appliquez des filtres avec un spectre très large, voire intégral, alors vous devez faire très attention
+et bien réfléchir à tous les cas d'utilisation de votre application.
+
+************************************************************************************************************************
+                                         Désactiver le filtre
+************************************************************************************************************************
+
+Une fois vos développements et tests terminés, pour plus de commodité dans les exemples à suivre, je vous conseille
+de désactiver ce filtre. Pour cela, commentez simplement sa déclaration dans le fichier web.xml de votre application :
+
+Il faudra redémarrer Tomcat pour que la modification soit prise en compte.
+
+************************************************************************************************************************
+                                      Modifier le mode de déclenchement d'un filtre
+************************************************************************************************************************
+
+Je vous ai implicitement fait comprendre à travers ces quelques exemples qu'un filtre était déclenché lors de la
+réception d'une requête HTTP uniquement. Eh bien sachez qu'il s'agit là d'un comportement par défaut ! En réalité,
+un filtre est tout à fait capable de s'appliquer à un forwarding, mais il faut pour cela modifier sa déclaration dans
+le fichier web.xml :
+                             ----------------------------------------------------------------------
+                              <filter>
+                                  <filter-name>RestrictionFilter</filter-name>
+                                  <filter-class>com.sdzee.filters.RestrictionFilter</filter-class>
+                              </filter>
+                              <filter-mapping>
+                                  <filter-name>RestrictionFilter</filter-name>
+                                  <url-pattern>/*</url-pattern>
+                                  <dispatcher>REQUEST</dispatcher>
+                                  <dispatcher>FORWARD</dispatcher>
+                              </filter-mapping>
+                             ----------------------------------------------------------------------
+
+Il suffit, comme vous pouvez l'observer, de rajouter un champ <dispatcher> à la fin de la section <filter-mapping>.
+
+De même, si dans votre projet vous mettez en place des inclusions et souhaitez leur appliquer un filtre, alors il
+faudra ajouter cette ligne à la déclaration du filtre :
+
+                             <dispatcher>INCLUDE</dispatcher>
+
+Nous n'allons pas nous amuser à vérifier le bon fonctionnement de ces changements. Retenez simplement qu'il est bel
+et bien possible de filtrer les forwardings et inclusions en plus des requêtes directes entrantes, en modifiant au
+cas par cas les déclarations des filtres à appliquer. Enfin, n'oubliez pas que ces ajouts au fichier web.xml ne sont
+pris en compte qu'après un redémarrage du serveur.
+
+************************************************************************************************************************
+                                      Retour sur l'encodage UTF-8
+************************************************************************************************************************
+
+Avant de passer à la suite, je souhaite vous faire découvrir un autre exemple d'utilisation d'un filtre. Vous ne l'avez
+peut-être pas encore remarqué, mais notre application ne sait toujours pas correctement gérer les caractères accentués,
+ni les caractères spéciaux et alphabets non latins...
+
+Comment est-ce possible ? Nous avons déjà paramétré Eclipse et notre projet pour que tous nos fichiers soient encodés
+en UTF-8, il ne devrait plus y avoir de problème !
+
+Je vous ai déjà expliqué, lorsque nous avons associé notre première servlet à une page JSP, que les problématiques
+d'encodage intervenaient à deux niveaux : côté navigateur et côté serveur. Eh bien en réalité, ce n'est pas si simple.
+Avec ce que nous avons mis en place, le navigateur est bien capable de déterminer l'encodage des données envoyées par
+le serveur, mais le serveur quant à lui est incapable de déterminer l'encodage des données envoyées par le client, lors
+d'une requête GET ou POST. Essayez dans votre formulaire d'inscription d'entrer un nom qui contient un accent, par
+exemple (voir la figure suivante).
+
+nom : cèpe
+
+Si vous cliquez alors sur le bouton d'inscription, votre navigateur va envoyer une requête POST au serveur, qui va
+alors retourner le résultat affiché à la figure suivante.
+
+cA ..pe
+
+Vous devez ici reconnaître le problème que nous avions rencontrés à nos débuts ! Là encore, il s'agit d'une erreur
+d'interprétation : le serveur considère par défaut que les données qui lui sont transmises suivent l'encodage
+latin ISO-8859-1, alors qu'en réalité ce sont des données en UTF-8 qui sont envoyées, d'où les symboles bizarroïdes
+à nouveau observés...
+
+Très bien, mais quel est le rapport avec nos filtres ?
+
+Pour corriger ce comportement, il est nécessaire d'effectuer un appel à la méthode setCharacterEncoding() non plus
+depuis l'objet HttpServletResponse comme nous l'avions fait dans notre toute première servlet, mais depuis l'objet
+HttpServletRequest ! En effet, nous cherchons bien ici à préciser l'encodage des données de nos requêtes ; nous
+l'avons déjà appris, l'encodage des données de nos réponses est quant à lui assuré par la ligne placée en tête de
+chacune de nos pages JSP.
+
+Ainsi, nous pourrions manuellement ajouter une ligne request.setCharacterEncoding("UTF-8"); dans les méthodes doPost()
+de chacune de nos servlets, mais nous savons que dupliquer cet appel dans toutes nos servlets n'est pas pratique du tout.
+En outre, la documentation de la méthode précise qu'il faut absolument réaliser l'appel avant toute lecture de données,
+afin que l'encodage soit bien pris en compte par le serveur.
+
+Voilà donc deux raisons parfaites pour mettre en place... un filtre ! C'est l'endroit idéal pour effectuer simplement
+cet appel à chaque requête reçue, et sur l'intégralité de l'application. Et puisque qu'une bonne nouvelle n'arrive jamais
+seule, il se trouve que nous n'avons même pas besoin de créer nous-mêmes ce filtre, Tomcat en propose déjà un nativement !
+Il va donc nous suffire d'ajouter une déclaration dans le fichier web.xml de notre application pour que notre projet soit
+enfin capable de gérer correctement les requêtes POST qu'il traite :
+
+                           ---------------------------------------------------------------------
+                           <filter>
+                               <filter-name>Set Character Encoding</filter-name>
+                               <filter-class>org.apache.catalina.filters.SetCharacterEncodingFilter</filter-class>
+                               <init-param>
+                                   <param-name>encoding</param-name>
+                                   <param-value>UTF-8</param-value>
+                               </init-param>
+                               <init-param>
+                                   <param-name>ignore</param-name>
+                                   <param-value>false</param-value>
+                               </init-param>
+                           </filter>
+                           <filter-mapping>
+                               <filter-name>Set Character Encoding</filter-name>
+                               <url-pattern>/*</url-pattern>
+                           </filter-mapping>
+                           --------------------------------------------------------------------------
+
+Vous retrouvez la déclaration que vous avez apprise un peu plus tôt, via la balise <filter>. La seule nouveauté,
+c'est l'utilisation du filtre natif SetCharacterEncodingFilter issu du package org.apache.catalina.filters. Comme
+vous pouvez le constater, celui-ci nécessite deux paramètres d’initialisation dont un nommé encoding, qui permet au
+développeur de spécifier l'encodage à utiliser. Je vous laisse parcourir la documentation du filtre pour plus
+d'informations. ;)
+
+De même, vous retrouvez dans la section <filter-mapping> l'application du filtre au projet entier, grâce au
+caractère * appliqué à la racine.
+
+Une fois les modifications effectuées, il vous suffit alors de redémarrer Tomcat et d'essayer à nouveau de saisir
+un nom accentué.
+
+Vous remarquez cette fois la bonne gestion du mot accentué, qui est ré-affiché correctement. Bien évidemment,
+cela vaut également pour tout caractère issu d'un alphabet non latin : votre application est désormais capable de
+traiter des données écrites en arabe, en chinois, en russe, etc.
+
+************************************************************************************************************************
+
+   * Le forwarding s'effectue sur le serveur de manière transparente pour le client, alors que la redirection implique
+     un aller/retour chez le client.
+
+   * Un filtre ressemble à une servlet en de nombreux aspects :
+
+           - il agit sur le couple requête / réponse initié par le conteneur de servlets ;
+
+           - il se déclare dans le fichier web.xml via deux sections <filter> et <filter-mapping> ;
+
+           - il contient une méthode de traitement, nommée doFilter() ;
+
+           - il peut s'appliquer à un pattern d'URL comme à une page en particulier.
+
+   * Plusieurs filtres sont applicables en cascade sur une même paire requête / réponse, dans l'ordre défini par
+     leur déclaration dans le web.xml.
+
+   * La transition d'un filtre vers le maillon suivant de la chaîne s'effectue via un appel à la méthode doFilter()
+     de l'objet FilterChain.
+
 --%>
 
 </body>

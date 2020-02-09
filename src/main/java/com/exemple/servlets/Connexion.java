@@ -22,6 +22,7 @@ public class Connexion extends HttpServlet {
     }
 
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        //request.setCharacterEncoding("UTF-8")  faire ca est laborieux et il faudrait faire cela dans tt les servlets
         // Préparation de l'objet formulaire
         ConnexionForm form = new ConnexionForm();
 
